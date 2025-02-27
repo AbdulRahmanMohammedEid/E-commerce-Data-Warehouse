@@ -1,0 +1,473 @@
+
+
+--1-When is the peak season of our ecommerce ?
+
+SELECT 
+    dd.YEAR,
+    COUNT(fo.ORDER_ID) AS ORDER_COUNT
+FROM 
+    FCT_ORDER fo
+JOIN 
+    DIM_DATE dd ON fo.ORDER_DATE_KEY = dd.DATE_KEY
+GROUP BY 
+       dd.YEAR
+ORDER BY 
+    ORDER_COUNT DESC;
+
+
+
+SELECT 
+    dd.MONTH_NAME,
+    dd.YEAR,
+    COUNT(fo.ORDER_ID) AS ORDER_COUNT
+FROM 
+    FCT_ORDER fo
+JOIN 
+    DIM_DATE dd ON fo.ORDER_DATE_KEY = dd.DATE_KEY
+GROUP BY 
+    dd.MONTH_NAME, dd.YEAR
+ORDER BY 
+    ORDER_COUNT DESC;
+
+
+----------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+--2-What time users are most likely make an order or using the ecommerce app?
+
+
+SELECT 
+    dt.HOUR, 
+    COUNT(fo.ORDER_ID) AS ORDER_COUNT
+FROM 
+    FCT_ORDER fo
+JOIN 
+    DIM_TIME dt ON fo.ORDER_TIME_KEY = dt.TIME_KEY
+GROUP BY 
+    dt.HOUR
+ORDER BY 
+    ORDER_COUNT DESC;
+
+
+----------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+--3-What is the preferred way to pay in the ecommerce?
+
+
+SELECT 
+    dp.PAYMENT_TYPE, 
+    COUNT(dp.ORDER_ID) AS PAYMENT_COUNT
+FROM 
+    DIM_PAYMENT dp
+GROUP BY 
+    dp.PAYMENT_TYPE
+ORDER BY 
+    PAYMENT_COUNT DESC;
+
+
+----------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+--4-How many installment is usually done when paying in the ecommerce?
+
+SELECT 
+    dp.PAYMENT_INSTALLMENTS, 
+    COUNT(dp.ORDER_ID) AS INSTALLMENT_COUNT
+FROM 
+    DIM_PAYMENT dp
+GROUP BY 
+    dp.PAYMENT_INSTALLMENTS
+ORDER BY 
+    INSTALLMENT_COUNT DESC;
+
+
+----------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+--5-What is the average spending time for user for our ecommerce?
+ 
+--in minutes
+SELECT 
+    AVG((CAST(fo.DELIVERED_DATE_TIME AS DATE) - CAST(fo.ORDER_DATE_TIME AS DATE)) * 24 * 60) AS AVG_SPENDING_TIME_MINUTES
+FROM 
+    FCT_ORDER fo
+WHERE 
+    fo.DELIVERED_DATE_TIME IS NOT NULL 
+    AND fo.ORDER_DATE_TIME IS NOT NULL;
+
+
+SELECT 
+    AVG((CAST(fo.DELIVERED_DATE_TIME AS DATE) - CAST(fo.ORDER_DATE_TIME AS DATE)) * 24) AS AVG_SPENDING_HOURS
+FROM 
+    FCT_ORDER fo
+WHERE 
+    fo.DELIVERED_DATE_TIME IS NOT NULL 
+    AND fo.ORDER_DATE_TIME IS NOT NULL;
+
+-- in days
+SELECT 
+    AVG((CAST(fo.DELIVERED_DATE_TIME AS DATE) - CAST(fo.ORDER_DATE_TIME AS DATE))) AS AVG_SPENDING_DAYS
+FROM 
+    FCT_ORDER fo
+WHERE 
+    fo.DELIVERED_DATE_TIME IS NOT NULL 
+    AND fo.ORDER_DATE_TIME IS NOT NULL;
+
+
+----------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+--6-What is the frequency of purchase on each state?
+
+SELECT 
+    ds.CURRENT_SELLER_STATE AS STATE, 
+    COUNT(doi.ORDER_ID) AS ORDER_COUNT
+FROM 
+    DIM_ORDER_ITEM doi 
+JOIN 
+    DIM_SELLER ds ON doi.SELLER_ID = ds.SELLER_ID
+GROUP BY 
+    ds.CURRENT_SELLER_STATE
+ORDER BY 
+    ORDER_COUNT DESC;
+
+--or
+
+SELECT 
+    ds.CURRENT_SELLER_STATE AS STATE, 
+    COUNT(DISTINCT oi.ORDER_ID) AS ORDER_COUNT
+FROM 
+    DIM_ORDER_ITEM oi
+JOIN 
+    DIM_SELLER ds ON oi.SELLER_ID = ds.SELLER_ID
+GROUP BY 
+    ds.CURRENT_SELLER_STATE
+ORDER BY 
+    ORDER_COUNT DESC;
+
+----------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+--7-Which logistic route that have heavy traffic in our ecommerce?
+
+SELECT 
+    du.CUSTOMER_CITY || ', ' || du.CUSTOMER_STATE AS BUYER_LOCATION,
+    ds.CURRENT_SELLER_CITY || ', ' || ds.CURRENT_SELLER_STATE AS SELLER_LOCATION,
+    COUNT(DISTINCT oi.ORDER_ID) AS ORDER_COUNT
+FROM 
+    FCT_ORDER fo
+JOIN 
+    DIM_USER du ON fo.USER_NAME = du.USER_NAME 
+JOIN 
+    DIM_ORDER_ITEM oi ON fo.ORDER_ID = oi.ORDER_ID 
+JOIN 
+    DIM_SELLER ds ON oi.SELLER_ID = ds.SELLER_ID 
+GROUP BY 
+    du.CUSTOMER_CITY, du.CUSTOMER_STATE, 
+    ds.CURRENT_SELLER_CITY, ds.CURRENT_SELLER_STATE
+ORDER BY 
+    ORDER_COUNT DESC;
+
+----------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+--8-How many late delivered order in our ecommerce? Are late order affecting the customer satisfaction?
+
+SELECT 
+    COUNT(CASE WHEN fo.DELIVERED_DATE_TIME > fo.ESTIMATED_DATE_TIME_DELIVERY THEN fo.ORDER_ID END) AS LATE_ORDERS,
+    AVG(CASE WHEN fo.DELIVERED_DATE_TIME > fo.ESTIMATED_DATE_TIME_DELIVERY AND ff.FEEDBACK_SCORE IS NOT NULL THEN ff.FEEDBACK_SCORE END) AS AVG_FEEDBACK_SCORE
+FROM 
+    FCT_ORDER fo
+LEFT JOIN 
+    DIM_FEEDBACK ff ON fo.ORDER_ID = ff.ORDER_ID;
+
+
+SELECT 
+    COUNT(CASE WHEN fo.DELIVERED_DATE_TIME <= fo.ESTIMATED_DATE_TIME_DELIVERY THEN fo.ORDER_ID END) AS ORDERS,
+    AVG(CASE WHEN fo.DELIVERED_DATE_TIME <= fo.ESTIMATED_DATE_TIME_DELIVERY AND ff.FEEDBACK_SCORE IS NOT NULL THEN ff.FEEDBACK_SCORE END) AS AVG_FEEDBACK_SCORE
+FROM 
+    FCT_ORDER fo
+LEFT JOIN 
+    DIM_FEEDBACK ff ON fo.ORDER_ID = ff.ORDER_ID;
+
+
+----------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+--9-How long are the delay for delivery / shipping process in each state?
+
+-- delay by hours
+SELECT 
+    ds.CURRENT_SELLER_STATE AS STATE, 
+    AVG(
+        (CAST(fo.DELIVERED_DATE_TIME AS DATE) - CAST(fo.ESTIMATED_DATE_TIME_DELIVERY AS DATE)) * 24
+    ) AS AVG_DELAY_HOURS
+FROM 
+    FCT_ORDER fo
+JOIN 
+    DIM_ORDER_ITEM doi ON fo.ORDER_ID = doi.ORDER_ID 
+JOIN 
+    DIM_SELLER ds ON doi.SELLER_ID = ds.SELLER_ID
+WHERE 
+    fo.DELIVERED_DATE_TIME > fo.ESTIMATED_DATE_TIME_DELIVERY
+GROUP BY 
+    ds.CURRENT_SELLER_STATE
+ORDER BY 
+    AVG_DELAY_HOURS DESC;
+
+-- delay by days 
+
+SELECT 
+    ds.CURRENT_SELLER_STATE AS STATE, 
+    AVG(
+        EXTRACT(HOUR FROM (fo.DELIVERED_DATE_TIME - fo.ESTIMATED_DATE_TIME_DELIVERY))
+    ) AS AVG_DELAY_DAYS
+FROM 
+    FCT_ORDER fo
+JOIN 
+    DIM_ORDER_ITEM doi ON fo.ORDER_ID = doi.ORDER_ID 
+JOIN 
+    DIM_SELLER ds ON doi.SELLER_ID = ds.SELLER_ID
+WHERE 
+    fo.DELIVERED_DATE_TIME > fo.ESTIMATED_DATE_TIME_DELIVERY
+GROUP BY 
+    ds.CURRENT_SELLER_STATE
+ORDER BY 
+    AVG_DELAY_DAYS DESC;
+
+
+SELECT 
+    ds.CURRENT_SELLER_STATE AS STATE, 
+    DU.CUSTOMER_STATE ,
+    AVG(
+        (CAST(fo.DELIVERED_DATE_TIME AS DATE) - CAST(fo.ESTIMATED_DATE_TIME_DELIVERY AS DATE)) * 24
+    ) AS AVG_DELAY_HOURS,
+    AVG(
+        CAST(fo.DELIVERED_DATE_TIME AS DATE) - CAST(fo.ESTIMATED_DATE_TIME_DELIVERY AS DATE)
+    ) AS AVG_DELAY_DAYS
+FROM 
+    FCT_ORDER fo
+JOIN 
+    DIM_USER du ON fo.USER_NAME = DU.USER_NAME 
+JOIN 
+    DIM_ORDER_ITEM doi ON fo.ORDER_ID = doi.ORDER_ID 
+JOIN 
+    DIM_SELLER ds ON doi.SELLER_ID = ds.SELLER_ID
+WHERE 
+    fo.DELIVERED_DATE_TIME > fo.ESTIMATED_DATE_TIME_DELIVERY
+GROUP BY 
+    ds.CURRENT_SELLER_STATE,
+    du.CUSTOMER_STATE 
+ORDER BY 
+    AVG_DELAY_HOURS DESC;
+
+----------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+--10-How long are the difference between estimated delivery time and actual delivery time in each state?
+-- delay by hours
+SELECT 
+    ds.CURRENT_SELLER_STATE AS STATE, 
+    AVG(
+        (CAST(fo.DELIVERED_DATE_TIME AS DATE) - CAST(fo.ESTIMATED_DATE_TIME_DELIVERY AS DATE)) * 24
+    ) AS AVG_DELAY_HOURS
+FROM 
+    FCT_ORDER fo
+JOIN 
+    DIM_ORDER_ITEM doi ON fo.ORDER_ID = doi.ORDER_ID 
+JOIN 
+    DIM_SELLER ds ON doi.SELLER_ID = ds.SELLER_ID
+GROUP BY 
+    ds.CURRENT_SELLER_STATE
+ORDER BY 
+    AVG_DELAY_HOURS DESC;
+
+-- delay by days 
+
+SELECT 
+    ds.CURRENT_SELLER_STATE AS STATE, 
+    AVG(
+        EXTRACT(HOUR FROM (fo.DELIVERED_DATE_TIME - fo.ESTIMATED_DATE_TIME_DELIVERY))
+    ) AS AVG_DELAY_DAYS
+FROM 
+    FCT_ORDER fo
+JOIN 
+    DIM_ORDER_ITEM doi ON fo.ORDER_ID = doi.ORDER_ID 
+JOIN 
+    DIM_SELLER ds ON doi.SELLER_ID = ds.SELLER_ID
+GROUP BY 
+    ds.CURRENT_SELLER_STATE
+ORDER BY 
+    AVG_DELAY_DAYS DESC;
+
+
+SELECT 
+    ds.CURRENT_SELLER_STATE AS STATE, 
+    DU.CUSTOMER_STATE ,
+    AVG(
+        (CAST(fo.DELIVERED_DATE_TIME AS DATE) - CAST(fo.ESTIMATED_DATE_TIME_DELIVERY AS DATE)) * 24
+    ) AS AVG_DELAY_HOURS,
+    AVG(
+        CAST(fo.DELIVERED_DATE_TIME AS DATE) - CAST(fo.ESTIMATED_DATE_TIME_DELIVERY AS DATE)
+    ) AS AVG_DELAY_DAYS
+FROM 
+    FCT_ORDER fo
+JOIN 
+    DIM_USER du ON fo.USER_NAME = DU.USER_NAME 
+JOIN 
+    DIM_ORDER_ITEM doi ON fo.ORDER_ID = doi.ORDER_ID 
+JOIN 
+    DIM_SELLER ds ON doi.SELLER_ID = ds.SELLER_ID
+GROUP BY 
+    ds.CURRENT_SELLER_STATE,
+    du.CUSTOMER_STATE 
+ORDER BY 
+    AVG_DELAY_HOURS DESC;
+
+----------------------------------------------------
