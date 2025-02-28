@@ -9,7 +9,7 @@ This project focuses on building a Data Warehouse (DW) and ETL pipelines for an 
       ✅ Customer spending time and purchase frequency per state.
       ✅ Logistics routes with heavy traffic and delivery delays.
       ✅ Impact of late deliveries on customer satisfaction.
-
+ 
 🛠️ Tech Stack & Tools Used
     ETL Tool: Informatica PowerCenter
     Database: Oracle
