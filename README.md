@@ -24,7 +24,7 @@ Database: Oracle
 
 Programming: SQL, PL/SQL
 
-Data Modeling: Dimensional Modeling (Star Schema)
+Data Modeling: Dimensional Modeling (snowflake Schema)
 
 Version Control: Git & GitHub
 
